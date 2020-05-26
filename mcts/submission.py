@@ -2,8 +2,6 @@
 # Everything encapsulated in one method because of submission format
 
 def agent(obs, config):
-    import time
-    start_time = time.time()
     import numpy as np
 
     # constants determined from game size
@@ -105,8 +103,8 @@ def agent(obs, config):
         # reset board info
         np.copyto(tmpcol_row, col_rows)
     # Proceed by UCT
-    t = 0
-    while time.time() - start_time < config.actTimeout - 0.2:
+    num_iters = 5000
+    for t in range(num_iters):
         node = uct(nodes, t+1)
         node.expand(board, tmpcol_row)
         np.copyto(tmpcol_row, col_rows)
