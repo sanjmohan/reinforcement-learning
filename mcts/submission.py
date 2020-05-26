@@ -2,6 +2,8 @@
 # Everything encapsulated in one method because of submission format
 
 def agent(obs, config):
+    import time
+    start_time = time.time()
     import numpy as np
 
     # constants determined from game size
@@ -14,10 +16,10 @@ def agent(obs, config):
         right_col_mask = (right_col_mask << 2*config.columns) ^ 0b11
     masks = [~left_col_mask & allmask, ~right_col_mask & allmask, allmask, ~left_col_mask & allmask]
     directions = list(zip([1, config.columns-1, config.columns, config.columns+1], masks))
-    
+
     def check_filled(col_rows):
         return np.all(col_rows < 0)
-    
+
     def check_won(board, col_rows):
         # row win, diag win, column win, diag win
         for direction, mask in directions:
@@ -36,7 +38,7 @@ def agent(obs, config):
         board = board | (mark << (top-2*int(row*7 + col)))
         col_rows[col] -= 1
         return board
-        
+
     def uct(nodes, t, c=1):
         best = np.argmax([n.wins/n.plays + c*np.sqrt(2*np.log(t)/n.plays) for n in nodes])
         return nodes[best]
@@ -48,7 +50,7 @@ def agent(obs, config):
             self.plays = 0
             self.wins = 0.0
             self.children = []
-            
+
         def expand(self, board, col_rows):
             board = play(board, self.col, col_rows, self.mark)
             self.plays += 1
@@ -69,7 +71,7 @@ def agent(obs, config):
                 child_res = self.children[-1].simulate(board, col_rows)
             self.wins += 1 - child_res
             return 1 - child_res
-            
+
         def simulate(self, board, col_rows):
             board = play(board, self.col, col_rows, self.mark)
             self.plays += 1
@@ -103,11 +105,12 @@ def agent(obs, config):
         # reset board info
         np.copyto(tmpcol_row, col_rows)
     # Proceed by UCT
-    num_iters = 5000
-    for t in range(num_iters):
+    t = 0
+    while time.time() - start_time < config.timeout - 0.15:
         node = uct(nodes, t+1)
         node.expand(board, tmpcol_row)
         np.copyto(tmpcol_row, col_rows)
+        t += 1
     # Choose best move
     best = int(np.argmax([n.wins/n.plays for n in nodes]))
     return nodes[best].col
